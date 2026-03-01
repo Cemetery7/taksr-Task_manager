@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taskr — менеджер задач</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e0e;
+    --surface: #161616;
+    --border: #2a2a2a;
+    --accent: #c8f53d;
+    --accent-dim: #9abb2e;
+    --text: #e8e8e8;
+    --muted: #666;
+    --danger: #ff5f5f;
+    --done: #3d3d3d;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── AUTH SCREEN ── */
+  #auth-screen {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  .auth-card {
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .logo {
+    font-family: 'Fraunces', serif;
+    font-size: 3rem;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: -2px;
+    margin-bottom: 0.25rem;
+  }
+
+  .logo-sub {
+    color: var(--muted);
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 2.5rem;
+  }
+
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+  }
+
+  .tab {
+    padding: 0.5rem 1.25rem 0.75rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s;
+  }
+
+  .tab.active {
+    color: var(--accent);
+  }
+
+  .tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  .field {
+    margin-bottom: 1rem;
+  }
+
+  label {
+    display: block;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+  }
+
+  input[type="text"], input[type="password"], input[type="email"] {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    padding: 0.65rem 0.85rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input:focus {
+    border-color: var(--accent);
+  }
+
+  .btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--accent);
+    color: #0e0e0e;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    transition: background 0.15s, transform 0.1s;
+  }
+
+  .btn:hover { background: var(--accent-dim); }
+  .btn:active { transform: scale(0.98); }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    width: auto;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.7rem;
+  }
+
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); background: transparent; }
+
+  .error-msg {
+    color: var(--danger);
+    font-size: 0.75rem;
+    margin-top: 0.75rem;
+    min-height: 1rem;
+  }
+
+  /* ── APP SCREEN ── */
+  #app-screen {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-logo {
+    font-family: 'Fraunces', serif;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: -1px;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .username-badge {
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .username-badge span {
+    color: var(--text);
+  }
+
+  main {
+    flex: 1;
+    max-width: 720px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .add-task-bar {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+  }
+
+  .add-task-bar input {
+    flex: 1;
+  }
+
+  .add-task-bar .btn {
+    width: auto;
+    padding: 0 1.5rem;
+    margin-top: 0;
+    white-space: nowrap;
+  }
+
+  .filters {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .filter-btn {
+    padding: 0.3rem 0.75rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .filter-btn.active, .filter-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .stats {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-left: auto;
+    align-self: center;
+  }
+
+  .task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .task-item {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    transition: border-color 0.2s, opacity 0.2s;
+    animation: slideIn 0.2s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .task-item:hover { border-color: #3a3a3a; }
+
+  .task-item.done { opacity: 0.45; }
+
+  .task-check {
+    width: 18px; height: 18px;
+    border: 1px solid var(--muted);
+    background: none;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+
+  .task-item.done .task-check {
+    border-color: var(--accent);
+    background: var(--accent);
+  }
+
+  .task-check::after {
+    content: '';
+    display: none;
+    width: 5px; height: 9px;
+    border-right: 2px solid #0e0e0e;
+    border-bottom: 2px solid #0e0e0e;
+    transform: rotate(45deg) translate(-1px, -1px);
+  }
+
+  .task-item.done .task-check::after { display: block; }
+
+  .task-text {
+    flex: 1;
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+
+  .task-item.done .task-text {
+    text-decoration: line-through;
+    color: var(--muted);
+  }
+
+  .task-date {
+    font-size: 0.65rem;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .task-del {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0 0.2rem;
+    opacity: 0;
+    transition: opacity 0.15s, color 0.15s;
+  }
+
+  .task-item:hover .task-del { opacity: 1; }
+  .task-del:hover { color: var(--danger); }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--muted);
+    font-size: 0.8rem;
+    line-height: 2;
+  }
+
+  .empty-state .icon {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 0.5rem;
+    opacity: 0.3;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+  }
+
+  /* API info block */
+  .api-hint {
+    background: #111;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 1rem 1.25rem;
+    margin-top: 2rem;
+    font-size: 0.72rem;
+    line-height: 1.9;
+    color: var(--muted);
+  }
+
+  .api-hint strong { color: var(--accent); }
+  .api-hint code {
+    background: #1a1a1a;
+    padding: 0.1em 0.3em;
+    font-family: 'DM Mono', monospace;
+    color: var(--text);
+  }
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="logo">taskr</div>
+    <div class="logo-sub">task manager · go backend practice</div>
+
+    <div class="tabs">
+      <button class="tab active" id="tab-login" onclick="switchTab('login')">войти</button>
+      <button class="tab" id="tab-register" onclick="switchTab('register')">регистрация</button>
+    </div>
+
+    <div id="form-login">
+      <div class="field">
+        <label>имя пользователя</label>
+        <input type="text" id="login-username" placeholder="username" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>пароль</label>
+        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn" onclick="login()">войти →</button>
+      <div class="error-msg" id="login-error"></div>
+    </div>
+
+    <div id="form-register" style="display:none">
+      <div class="field">
+        <label>имя пользователя</label>
+        <input type="text" id="reg-username" placeholder="username" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>пароль</label>
+        <input type="password" id="reg-password" placeholder="••••••••" autocomplete="new-password">
+      </div>
+      <button class="btn" onclick="register()">создать аккаунт →</button>
+      <div class="error-msg" id="reg-error"></div>
+    </div>
+
+    <div class="api-hint">
+      <strong>// Registration</strong><br>
+      <code>4< Simbols</code> — Password<br>
+      <code>Unlimit symbol</code> — Login<br>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen">
+  <header>
+    <div class="header-logo">taskr</div>
+    <div class="header-right">
+      <div class="username-badge">пользователь: <span id="current-user">—</span></div>
+      <button class="btn btn-ghost" onclick="logout()">выйти</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="add-task-bar">
+      <input type="text" id="new-task-input" placeholder="новая задача..." maxlength="200"
+             onkeydown="if(event.key==='Enter') addTask()">
+      <button class="btn" onclick="addTask()">+ добавить</button>
+    </div>
+
+    <div class="filters" id="filters">
+      <button class="filter-btn active" onclick="setFilter('all', this)">все</button>
+      <button class="filter-btn" onclick="setFilter('active', this)">активные</button>
+      <button class="filter-btn" onclick="setFilter('done', this)">выполненные</button>
+      <div class="stats" id="stats-label"></div>
+    </div>
+
+    <div class="task-list" id="task-list">
+      <div class="loading">загрузка...</div>
+    </div>
+  </main>
+</div>
+
+<script>
+const API = 'http://localhost:8081';
+let token = localStorage.getItem('token') || '';
+let username = localStorage.getItem('username') || '';
+let tasks = [];
+let currentFilter = 'all';
+
+// ── Init ──
+if (token) showApp();
+
+function showApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'flex';
+  document.getElementById('current-user').textContent = username;
+  fetchTasks();
+}
+
+function showAuth() {
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+}
+
+// ── Tabs ──
+function switchTab(t) {
+  document.getElementById('tab-login').classList.toggle('active', t === 'login');
+  document.getElementById('tab-register').classList.toggle('active', t === 'register');
+  document.getElementById('form-login').style.display = t === 'login' ? '' : 'none';
+  document.getElementById('form-register').style.display = t === 'register' ? '' : 'none';
+}
+
+// ── Auth ──
+async function login() {
+  const u = document.getElementById('login-username').value.trim();
+  const p = document.getElementById('login-password').value;
+  const err = document.getElementById('login-error');
+  err.textContent = '';
+  try {
+    const r = await fetch(`${API}/api/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: u, password: p })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'ошибка входа');
+    token = data.token;
+    username = u;
+    localStorage.setItem('token', token);
+    localStorage.setItem('username', username);
+    showApp();
+  } catch(e) { err.textContent = e.message; }
+}
+
+async function register() {
+  const u = document.getElementById('reg-username').value.trim();
+  const p = document.getElementById('reg-password').value;
+  const err = document.getElementById('reg-error');
+  err.textContent = '';
+  try {
+    const r = await fetch(`${API}/api/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: u, password: p })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'ошибка регистрации');
+    // auto-login after register
+    token = data.token;
+    username = u;
+    localStorage.setItem('token', token);
+    localStorage.setItem('username', username);
+    showApp();
+  } catch(e) { err.textContent = e.message; }
+}
+
+function logout() {
+  token = ''; username = '';
+  localStorage.removeItem('token');
+  localStorage.removeItem('username');
+  tasks = [];
+  showAuth();
+}
+
+// ── Tasks ──
+async function fetchTasks() {
+  try {
+    const r = await fetch(`${API}/api/tasks`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (r.status === 401) { logout(); return; }
+    tasks = await r.json();
+    if (!Array.isArray(tasks)) tasks = [];
+    renderTasks();
+  } catch(e) {
+    document.getElementById('task-list').innerHTML =
+      `<div class="empty-state"><span class="icon">⚠</span>нет соединения с бекендом<br>запусти сервер на <code>localhost:8081</code></div>`;
+  }
+}
+
+async function addTask() {
+  const input = document.getElementById('new-task-input');
+  const text = input.value.trim();
+  if (!text) return;
+  try {
+    const r = await fetch(`${API}/api/tasks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ title: text })
+    });
+    if (r.status === 401) { logout(); return; }
+    const task = await r.json();
+    tasks.unshift(task);
+    input.value = '';
+    renderTasks();
+  } catch(e) { alert('ошибка при добавлении задачи'); }
+}
+
+async function toggleTask(id) {
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  try {
+    const r = await fetch(`${API}/api/tasks/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ done: !task.done })
+    });
+    if (r.status === 401) { logout(); return; }
+    const updated = await r.json();
+    Object.assign(task, updated);
+    renderTasks();
+  } catch(e) {}
+}
+
+async function deleteTask(id) {
+  try {
+    const r = await fetch(`${API}/api/tasks/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (r.status === 401) { logout(); return; }
+    tasks = tasks.filter(t => t.id !== id);
+    renderTasks();
+  } catch(e) {}
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTasks();
+}
+
+function renderTasks() {
+  const done = tasks.filter(t => t.done).length;
+  document.getElementById('stats-label').textContent =
+    `${done}/${tasks.length} выполнено`;
+
+  let filtered = tasks;
+  if (currentFilter === 'active') filtered = tasks.filter(t => !t.done);
+  if (currentFilter === 'done')   filtered = tasks.filter(t => t.done);
+
+  const list = document.getElementById('task-list');
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty-state"><span class="icon">✓</span>${
+      currentFilter === 'all' ? 'задач пока нет' :
+      currentFilter === 'active' ? 'нет активных задач' : 'нет выполненных задач'
+    }</div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(task => `
+    <div class="task-item ${task.done ? 'done' : ''}">
+      <div class="task-check" onclick="toggleTask(${task.id})"></div>
+      <div class="task-text">${escHtml(task.title)}</div>
+      <div class="task-date">${formatDate(task.created_at)}</div>
+      <button class="task-del" onclick="deleteTask(${task.id})">✕</button>
+    </div>
+  `).join('');
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function formatDate(s) {
+  if (!s) return '';
+  try {
+    const d = new Date(s);
+    return d.toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit' });
+  } catch { return ''; }
+}
+
+// Allow Enter on auth
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (document.getElementById('tab-login').classList.contains('active') &&
+      document.getElementById('auth-screen').style.display !== 'none') login();
+});
+</script>
+</body>
+</html>
